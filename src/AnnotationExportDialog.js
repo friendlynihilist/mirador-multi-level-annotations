@@ -99,7 +99,7 @@ class AnnotationExportDialog extends Component {
                   className={classes.listitem}
                   component="a"
                   key={dl.canvasId}
-                  aria-label={`Export annotations for ${dl.label}`}
+                  aria-label={`Export annotations for ${dl.label} in JSON-LD`}
                   href={dl.url}
                   download={`${dl.id}.json`}
                 >
@@ -107,9 +107,32 @@ class AnnotationExportDialog extends Component {
                     <GetAppIcon />
                   </ListItemIcon>
                   <ListItemText>
-                    {`Export annotations for "${dl.label}"`}
+                    {`Export annotations for "${dl.label}" in JSON-LD`}
                   </ListItemText>
                 </MenuItem>
+                
+              ))}
+
+              {/* CUSTOM RDF ITEM */}
+
+              { exportLinks.map((dl) => (
+                <MenuItem
+                  button
+                  className={classes.listitem}
+                  component="a"
+                  key={dl.canvasId}
+                  aria-label={`Export annotations for ${dl.label} in RDF`}
+                  href={dl.url}
+                  download={`${dl.id}.json`}
+                >
+                  <ListItemIcon>
+                    <GetAppIcon />
+                  </ListItemIcon>
+                  <ListItemText>
+                    {`Export annotations for "${dl.label}" in RDF`}
+                  </ListItemText>
+                </MenuItem>
+                
               ))}
             </MenuList>
           )}

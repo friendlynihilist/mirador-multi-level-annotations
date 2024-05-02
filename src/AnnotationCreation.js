@@ -1,47 +1,53 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import Button from '@material-ui/core/Button';
-import Typography from '@material-ui/core/Typography';
-import Paper from '@material-ui/core/Paper';
-import Grid from '@material-ui/core/Grid';
-import ToggleButton from '@material-ui/lab/ToggleButton';
-import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
-import RectangleIcon from '@material-ui/icons/CheckBoxOutlineBlank';
-import CircleIcon from '@material-ui/icons/RadioButtonUnchecked';
-import PolygonIcon from '@material-ui/icons/Timeline';
-import GestureIcon from '@material-ui/icons/Gesture';
-import ClosedPolygonIcon from '@material-ui/icons/ChangeHistory';
-import OpenPolygonIcon from '@material-ui/icons/ShowChart';
-import FormatColorFillIcon from '@material-ui/icons/FormatColorFill';
-import StrokeColorIcon from '@material-ui/icons/BorderColor';
-import LineWeightIcon from '@material-ui/icons/LineWeight';
-import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import FormatShapesIcon from '@material-ui/icons/FormatShapes';
-import Popover from '@material-ui/core/Popover';
-import Divider from '@material-ui/core/Divider';
-import MenuItem from '@material-ui/core/MenuItem';
-import ClickAwayListener from '@material-ui/core/ClickAwayListener';
-import MenuList from '@material-ui/core/MenuList';
-import { SketchPicker } from 'react-color';
-import { v4 as uuid } from 'uuid';
-import { withStyles } from '@material-ui/core/styles';
-import CompanionWindow from 'mirador/dist/es/src/containers/CompanionWindow';
-import AnnotationDrawing from './AnnotationDrawing';
-import TextEditor from './TextEditor';
-import WebAnnotation from './WebAnnotation';
-import CursorIcon from './icons/Cursor';
+import React, { Component } from "react";
+import PropTypes from "prop-types";
+import Button from "@material-ui/core/Button";
+import Typography from "@material-ui/core/Typography";
+import Paper from "@material-ui/core/Paper";
+import Grid from "@material-ui/core/Grid";
+import ToggleButton from "@material-ui/lab/ToggleButton";
+import ToggleButtonGroup from "@material-ui/lab/ToggleButtonGroup";
+import RectangleIcon from "@material-ui/icons/CheckBoxOutlineBlank";
+import CircleIcon from "@material-ui/icons/RadioButtonUnchecked";
+import PolygonIcon from "@material-ui/icons/Timeline";
+import GestureIcon from "@material-ui/icons/Gesture";
+import ClosedPolygonIcon from "@material-ui/icons/ChangeHistory";
+import OpenPolygonIcon from "@material-ui/icons/ShowChart";
+import FormatColorFillIcon from "@material-ui/icons/FormatColorFill";
+import StrokeColorIcon from "@material-ui/icons/BorderColor";
+import LineWeightIcon from "@material-ui/icons/LineWeight";
+import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
+import FormatShapesIcon from "@material-ui/icons/FormatShapes";
+import InputLabel from "@material-ui/core/InputLabel";
+import Autocomplete from '@material-ui/lab/Autocomplete';
+import TextField from '@material-ui/core/TextField';
+import FormControl from "@material-ui/core/FormControl";
+import Select, { SelectChangeEvent } from "@material-ui/core/Select";
+import Popover from "@material-ui/core/Popover";
+import Divider from "@material-ui/core/Divider";
+import MenuItem from "@material-ui/core/MenuItem";
+import ClickAwayListener from "@material-ui/core/ClickAwayListener";
+import MenuList from "@material-ui/core/MenuList";
+import { SketchPicker } from "react-color";
+import { v4 as uuid } from "uuid";
+import { withStyles } from "@material-ui/core/styles";
+import CompanionWindow from "mirador/dist/es/src/containers/CompanionWindow";
+import AnnotationDrawing from "./AnnotationDrawing";
+import TextEditor from "./TextEditor";
+import WebAnnotation from "./WebAnnotation";
+import CursorIcon from "./icons/Cursor";
 
 /** */
 class AnnotationCreation extends Component {
   /** */
   constructor(props) {
+    console.log("PROPS --->", props);
     super(props);
     const annoState = {};
     if (props.annotation) {
       if (Array.isArray(props.annotation.body)) {
         annoState.tags = [];
         props.annotation.body.forEach((body) => {
-          if (body.purpose === 'tagging') {
+          if (body.purpose === "tagging") {
             annoState.tags.push(body.value);
           } else {
             annoState.annoBody = body.value;
@@ -53,10 +59,10 @@ class AnnotationCreation extends Component {
       if (props.annotation.target.selector) {
         if (Array.isArray(props.annotation.target.selector)) {
           props.annotation.target.selector.forEach((selector) => {
-            if (selector.type === 'SvgSelector') {
+            if (selector.type === "SvgSelector") {
               annoState.svg = selector.value;
-            } else if (selector.type === 'FragmentSelector') {
-              annoState.xywh = selector.value.replace('xywh=', '');
+            } else if (selector.type === "FragmentSelector") {
+              annoState.xywh = selector.value.replace("xywh=", "");
             }
           });
         } else {
@@ -66,18 +72,21 @@ class AnnotationCreation extends Component {
     }
 
     const toolState = {
-      activeTool: 'cursor',
-      closedMode: 'closed',
+      activeTool: "cursor",
+      closedMode: "closed",
       currentColorType: false,
       fillColor: null,
-      strokeColor: '#00BFFF',
+      strokeColor: "#00BFFF",
       strokeWidth: 3,
       ...(props.config.annotation.defaults || {}),
     };
 
     this.state = {
       ...toolState,
-      annoBody: '',
+      conceptualLevel: "Work",
+      anchorOptions: ['Scriptio Inferior', 'Scriptio Superior'],
+      anchorValue: '',
+      annoBody: "",
       colorPopoverOpen: false,
       lineWeightPopoverOpen: false,
       popoverAnchorEl: null,
@@ -99,6 +108,9 @@ class AnnotationCreation extends Component {
     this.handleCloseLineWeight = this.handleCloseLineWeight.bind(this);
     this.closeChooseColor = this.closeChooseColor.bind(this);
     this.updateStrokeColor = this.updateStrokeColor.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.handleAnchorChange = this.handleAnchorChange.bind(this);
+    
   }
 
   /** */
@@ -155,36 +167,55 @@ class AnnotationCreation extends Component {
   /** */
   submitForm(e) {
     e.preventDefault();
-    const {
-      annotation, canvases, receiveAnnotation, config,
-    } = this.props;
-    const {
-      annoBody, tags, xywh, svg, textEditorStateBustingKey,
-    } = this.state;
+    const { annotation, canvases, receiveAnnotation, config } = this.props;
+    const { annoBody, tags, xywh, svg, conceptualLevel, anchorValue, textEditorStateBustingKey } = this.state;
     canvases.forEach((canvas) => {
       const storageAdapter = config.annotation.adapter(canvas.id);
       const anno = new WebAnnotation({
         body: annoBody,
         canvasId: canvas.id,
-        id: (annotation && annotation.id) || `${uuid()}`,
+        id: (annotation && annotation.id) || `https://purl.archive.org/domain/mlao/anno/${uuid()}`,
         manifestId: canvas.options.resource.id,
         svg,
         tags,
         xywh,
+        wasGeneratedBy: {
+          id: `https://purl.archive.org/domain/mlao/interpretation/${uuid()}`,
+          type: "InterpretationAct",
+          hasInterpretationCriterion: {
+            id: "https://purl.archive.org/domain/mlao/interpretation/criterion/diplomatic-interpretative-transcription",
+            type: "InterpretationCriterion"
+          }
+        },
+        hasAnchor: conceptualLevel ? {
+          label: `${anchorValue}`,
+          id: `https://purl.archive.org/domain/mlao/anchor/${anchorValue.toLowerCase().replaceAll(' ', '-')}`, // https://digi.vatlib.it/iiif/MSS_Vat.gr.984/canvas/p0001
+          type: "Anchor",
+          hasConceptualLevel: conceptualLevel,
+          isAnchoredTo: "Vat.gr.984",
+        } : '',
       }).toJson();
       if (annotation) {
         storageAdapter.update(anno).then((annoPage) => {
-          receiveAnnotation(canvas.id, storageAdapter.annotationPageId, annoPage);
+          receiveAnnotation(
+            canvas.id,
+            storageAdapter.annotationPageId,
+            annoPage
+          );
         });
       } else {
         storageAdapter.create(anno).then((annoPage) => {
-          receiveAnnotation(canvas.id, storageAdapter.annotationPageId, annoPage);
+          receiveAnnotation(
+            canvas.id,
+            storageAdapter.annotationPageId,
+            annoPage
+          );
         });
       }
     });
 
     this.setState({
-      annoBody: '',
+      annoBody: "",
       svg: null,
       textEditorStateBustingKey: textEditorStateBustingKey + 1,
       xywh: null,
@@ -213,24 +244,55 @@ class AnnotationCreation extends Component {
   /** */
   updateGeometry({ svg, xywh }) {
     this.setState({
-      svg, xywh,
+      svg,
+      xywh,
     });
   }
 
+  handleChange(event) {
+    console.log('EVENTO ----->', event);
+    this.setState({ conceptualLevel: event.target.value });
+    // console.log(this.conceptualLevel);
+}
+
+ /** */
+ handleAnchorChange(event, newValue) {
+  const { anchorOptions } = this.state;
+  if (newValue && !anchorOptions.includes(newValue)) {
+    this.setState({
+      anchorOptions: [...anchorOptions, newValue],
+      anchorValue: newValue
+    });
+  } else {
+    this.setState({ anchorValue: newValue });
+  }
+}
+
   /** */
   render() {
-    const {
-      annotation, classes, closeCompanionWindow, id, windowId,
-    } = this.props;
+    const { annotation, classes, closeCompanionWindow, id, windowId } =
+      this.props;
 
     const {
-      activeTool, colorPopoverOpen, currentColorType, fillColor, popoverAnchorEl, strokeColor,
-      popoverLineWeightAnchorEl, lineWeightPopoverOpen, strokeWidth, closedMode, annoBody, svg,
+      anchorOptions,
+      anchorValue,
+      activeTool,
+      colorPopoverOpen,
+      currentColorType,
+      fillColor,
+      popoverAnchorEl,
+      strokeColor,
+      popoverLineWeightAnchorEl,
+      lineWeightPopoverOpen,
+      strokeWidth,
+      closedMode,
+      annoBody,
+      svg,
       textEditorStateBustingKey,
     } = this.state;
     return (
       <CompanionWindow
-        title={annotation ? 'Edit annotation' : 'New annotation'}
+        title={annotation ? "Edit annotation" : "New annotation"}
         windowId={windowId}
         id={id}
       >
@@ -239,7 +301,7 @@ class AnnotationCreation extends Component {
           fillColor={fillColor}
           strokeColor={strokeColor}
           strokeWidth={strokeWidth}
-          closed={closedMode === 'closed'}
+          closed={closedMode === "closed"}
           svg={svg}
           updateGeometry={this.updateGeometry}
           windowId={windowId}
@@ -247,9 +309,7 @@ class AnnotationCreation extends Component {
         <form onSubmit={this.submitForm} className={classes.section}>
           <Grid container>
             <Grid item xs={12}>
-              <Typography variant="overline">
-                Target
-              </Typography>
+              <Typography variant="overline">Target</Typography>
             </Grid>
             <Grid item xs={12}>
               <Paper elevation={0} className={classes.paper}>
@@ -260,6 +320,7 @@ class AnnotationCreation extends Component {
                   onChange={this.changeTool}
                   aria-label="tool selection"
                   size="small"
+                  classes={{ grouped: classes.toggleButtonSmall }}
                 >
                   <ToggleButton value="cursor" aria-label="select cursor">
                     <CursorIcon />
@@ -268,7 +329,11 @@ class AnnotationCreation extends Component {
                     <FormatShapesIcon />
                   </ToggleButton>
                 </ToggleButtonGroup>
-                <Divider flexItem orientation="vertical" className={classes.divider} />
+                <Divider
+                  flexItem
+                  orientation="vertical"
+                  className={classes.divider}
+                />
                 <ToggleButtonGroup
                   className={classes.grouped}
                   value={activeTool}
@@ -276,6 +341,7 @@ class AnnotationCreation extends Component {
                   onChange={this.changeTool}
                   aria-label="tool selection"
                   size="small"
+                  classes={{ grouped: classes.toggleButtonSmall }}
                 >
                   <ToggleButton value="rectangle" aria-label="add a rectangle">
                     <RectangleIcon />
@@ -295,15 +361,10 @@ class AnnotationCreation extends Component {
           </Grid>
           <Grid container>
             <Grid item xs={12}>
-              <Typography variant="overline">
-                Style
-              </Typography>
+              <Typography variant="overline">Style</Typography>
             </Grid>
             <Grid item xs={12}>
-              <ToggleButtonGroup
-                aria-label="style selection"
-                size="small"
-              >
+              <ToggleButtonGroup className={classes.grouped} aria-label="style selection" size="small" classes={{ grouped: classes.toggleButtonSmall }}>
                 <ToggleButton
                   value="strokeColor"
                   aria-label="select color"
@@ -330,33 +391,81 @@ class AnnotationCreation extends Component {
                 </ToggleButton>
               </ToggleButtonGroup>
 
-              <Divider flexItem orientation="vertical" className={classes.divider} />
-              { /* close / open polygon mode only for freehand drawing mode. */
-                activeTool === 'freehand'
-                  ? (
-                    <ToggleButtonGroup
-                      size="small"
-                      value={closedMode}
-                      onChange={this.changeClosedMode}
-                    >
-                      <ToggleButton value="closed">
-                        <ClosedPolygonIcon />
-                      </ToggleButton>
-                      <ToggleButton value="open">
-                        <OpenPolygonIcon />
-                      </ToggleButton>
-                    </ToggleButtonGroup>
-                  )
-                  : null
+              <Divider
+                flexItem
+                orientation="vertical"
+                className={classes.divider}
+              />
+              {
+                /* close / open polygon mode only for freehand drawing mode. */
+                activeTool === "freehand" ? (
+                  <ToggleButtonGroup
+                    size="small"
+                    value={closedMode}
+                    onChange={this.changeClosedMode}
+                  >
+                    <ToggleButton value="closed">
+                      <ClosedPolygonIcon />
+                    </ToggleButton>
+                    <ToggleButton value="open">
+                      <OpenPolygonIcon />
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                ) : null
               }
-
             </Grid>
           </Grid>
           <Grid container>
+          <Grid item xs={12}>
+              <Typography variant="overline">Conceptual Level</Typography>
+            </Grid>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              {/* <InputLabel id="demo-simple-select-autowidth-label">
+                Conceptual Level
+              </InputLabel> */}
+              <Select
+                labelId="demo-simple-select-autowidth-label"
+                id="demo-simple-select-autowidth"
+                value={this.state.conceptualLevel}
+                onChange={this.handleChange}
+                autoWidth
+                label="Conceptual Level"
+              >
+                <MenuItem value={"Work"}>Work</MenuItem>
+                <MenuItem value={"Expression"}>Expression</MenuItem>
+                <MenuItem value={"Manifestation"}>Manifestation</MenuItem>
+                <MenuItem value={"Item"}>Item</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          </Grid>
+          {/* <Divider
+                flexItem
+                orientation="horizontal"
+                className={classes.divider}
+              /> */}
+          <Grid item xs={12}>
+              {/* <Typography variant="overline">Anchor</Typography> */}
+              <Autocomplete
+                freeSolo
+                size="small"
+                value={anchorValue}
+                onChange={this.handleAnchorChange}
+                options={anchorOptions}
+                renderInput={(params) => (
+                  <TextField {...params} variant="standard" label="Create Anchor" fullWidth />
+                )}
+              />
+            </Grid>
+          <Divider
+                flexItem
+                orientation="horizontal"
+                className={classes.divider}
+              />
+          <Grid container>
             <Grid item xs={12}>
-              <Typography variant="overline">
-                Content
-              </Typography>
+              <Typography variant="overline">Content</Typography>
             </Grid>
             <Grid item xs={12}>
               <TextEditor
@@ -366,9 +475,8 @@ class AnnotationCreation extends Component {
               />
             </Grid>
           </Grid>
-          <Button onClick={closeCompanionWindow}>
-            Cancel
-          </Button>
+          
+          <Button onClick={closeCompanionWindow}>Cancel</Button>
           <Button variant="contained" color="primary" type="submit">
             Save
           </Button>
@@ -418,18 +526,22 @@ const styles = (theme) => ({
     margin: theme.spacing(1, 0.5),
   },
   grouped: {
-    '&:first-child': {
+    "&:first-child": {
       borderRadius: theme.shape.borderRadius,
     },
-    '&:not(:first-child)': {
+    "&:not(:first-child)": {
       borderRadius: theme.shape.borderRadius,
     },
-    border: 'none',
+    border: "none",
     margin: theme.spacing(0.5),
   },
   paper: {
-    display: 'flex',
-    flexWrap: 'wrap',
+    display: "flex",
+    flexWrap: "wrap",
+  },
+  toggleButtonSmall: {  // Custom class name for targeting ToggleButtons specifically
+    padding: 2,
+    fontSize: '0.8125rem',
   },
   section: {
     paddingBottom: theme.spacing(1),
@@ -442,7 +554,7 @@ const styles = (theme) => ({
 AnnotationCreation.propTypes = {
   annotation: PropTypes.object, // eslint-disable-line react/forbid-prop-types
   canvases: PropTypes.arrayOf(
-    PropTypes.shape({ id: PropTypes.string, index: PropTypes.number }),
+    PropTypes.shape({ id: PropTypes.string, index: PropTypes.number })
   ),
   classes: PropTypes.object.isRequired, // eslint-disable-line react/forbid-prop-types
   closeCompanionWindow: PropTypes.func,
@@ -450,9 +562,12 @@ AnnotationCreation.propTypes = {
     annotation: PropTypes.shape({
       adapter: PropTypes.func,
       defaults: PropTypes.objectOf(
-        PropTypes.oneOfType(
-          [PropTypes.bool, PropTypes.func, PropTypes.number, PropTypes.string]
-        )
+        PropTypes.oneOfType([
+          PropTypes.bool,
+          PropTypes.func,
+          PropTypes.number,
+          PropTypes.string,
+        ])
       ),
     }),
   }).isRequired,

@@ -9,7 +9,7 @@ const config = {
   annotation: {
     adapter: (canvasId) => new LocalStorageAdapter(`localStorage://?canvasId=${canvasId}`),
     // adapter: (canvasId) => new AnnototAdapter(canvasId, endpointUrl),
-    exportLocalStorageAnnotations: false, // display annotation JSON export button
+    exportLocalStorageAnnotations: true, // display annotation JSON export button
   },
   id: 'demo',
   window: {
@@ -17,7 +17,7 @@ const config = {
     sideBarOpenByDefault: true,
   },
   windows: [{
-    loadedManifest: 'https://iiif.harvardartmuseums.org/manifests/object/299843',
+    loadedManifest: 'https://digi.vatlib.it/iiif/MSS_Vat.gr.984/manifest.json',
   }],
 };
 

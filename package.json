@@ -27,6 +27,7 @@
     "draft-js-export-html": "^1.4.1",
     "draft-js-import-html": "^1.4.1",
     "immutable": "^4.0.0-rc.12",
+    "jsonld": "^8.3.2",
     "material-ui-color-components": "^0.3.0",
     "paper": "^0.12.11",
     "react-color": "^2.18.1"
@@ -51,7 +52,7 @@
     "@material-ui/lab": "^4.0.0-alpha.56",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.6.0",
     "babel-eslint": "^10.1.0",
-    "canvas": "^2.6.1",
+    "canvas": "^2.11.2",
     "enzyme": "^3.11.0",
     "eslint": "^7.2",
     "eslint-config-airbnb": "^18.2.0",

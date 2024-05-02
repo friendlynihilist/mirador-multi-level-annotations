@@ -2,7 +2,7 @@
 export default class WebAnnotation {
   /** */
   constructor({
-    canvasId, id, xywh, body, tags, svg, manifestId,
+    canvasId, id, xywh, body, tags, svg, manifestId, hasAnchor, wasGeneratedBy
   }) {
     this.id = id;
     this.canvasId = canvasId;
@@ -11,7 +11,11 @@ export default class WebAnnotation {
     this.tags = tags;
     this.svg = svg;
     this.manifestId = manifestId;
+    this.hasAnchor = hasAnchor;
+    this.wasGeneratedBy = wasGeneratedBy;
   }
+
+  // GOOD URIs: http://{domain}/{type}/{concept}/{reference}
 
   /** */
   toJson() {
@@ -20,6 +24,8 @@ export default class WebAnnotation {
       id: this.id,
       motivation: 'commenting',
       target: this.target(),
+      hasAnchor: this.hasAnchor,
+      wasGeneratedBy: this.wasGeneratedBy,
       type: 'Annotation',
     };
   }
