@@ -1,4 +1,4 @@
-# mirador-annotations
+# mirador-multi-level-annotations
 
 [![Travis][build-badge]][build]
 [![npm package][npm-badge]][npm]
