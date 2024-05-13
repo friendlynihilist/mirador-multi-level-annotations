@@ -56,6 +56,7 @@ class AnnotationExportDialog extends Component {
             url,
           }];
         }
+        console.log('EXPORT ---->', resolvedAcc);
         return resolvedAcc;
       };
       if (canvases && canvases.length > 0) {
@@ -69,7 +70,7 @@ class AnnotationExportDialog extends Component {
   /** */
   closeDialog() {
     const { handleClose } = this.props;
-    this.setState({ exportLinks: [] });
+    this.setState({ exportLinks: [] }); // LA RISPOSTA E' QUA
     handleClose();
   }
 
@@ -77,6 +78,7 @@ class AnnotationExportDialog extends Component {
   render() {
     const { classes, handleClose, open } = this.props;
     const { exportLinks } = this.state;
+    // console.log('EXPORT ---->', exportLinks);
     return (
       <Dialog
         aria-labelledby="annotation-export-dialog-title"

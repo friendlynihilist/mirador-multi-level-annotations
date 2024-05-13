@@ -6,6 +6,9 @@ import Paper from "@material-ui/core/Paper";
 import Grid from "@material-ui/core/Grid";
 import ToggleButton from "@material-ui/lab/ToggleButton";
 import ToggleButtonGroup from "@material-ui/lab/ToggleButtonGroup";
+import PersonIcon from "@material-ui/icons/Person";
+// import PsychologyIcon from '@material-ui/icons/Psychology';
+import BookIcon from "@material-ui/icons/Book";
 import RectangleIcon from "@material-ui/icons/CheckBoxOutlineBlank";
 import CircleIcon from "@material-ui/icons/RadioButtonUnchecked";
 import PolygonIcon from "@material-ui/icons/Timeline";
@@ -18,8 +21,8 @@ import LineWeightIcon from "@material-ui/icons/LineWeight";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
 import FormatShapesIcon from "@material-ui/icons/FormatShapes";
 import InputLabel from "@material-ui/core/InputLabel";
-import Autocomplete from '@material-ui/lab/Autocomplete';
-import TextField from '@material-ui/core/TextField';
+import Autocomplete from "@material-ui/lab/Autocomplete";
+import TextField from "@material-ui/core/TextField";
 import FormControl from "@material-ui/core/FormControl";
 import Select, { SelectChangeEvent } from "@material-ui/core/Select";
 import Popover from "@material-ui/core/Popover";
@@ -35,6 +38,13 @@ import AnnotationDrawing from "./AnnotationDrawing";
 import TextEditor from "./TextEditor";
 import WebAnnotation from "./WebAnnotation";
 import CursorIcon from "./icons/Cursor";
+import Accordion from '@material-ui/core/Accordion';
+import AccordionActions from '@material-ui/core/AccordionActions';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
+import AccordionDetails from '@material-ui/core/AccordionDetails';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import AddIcon from '@material-ui/icons/Add';
+import RemoveIcon from '@material-ui/icons/Remove';
 
 /** */
 class AnnotationCreation extends Component {
@@ -84,8 +94,18 @@ class AnnotationCreation extends Component {
     this.state = {
       ...toolState,
       conceptualLevel: "Work",
-      anchorOptions: ['Scriptio Inferior', 'Scriptio Superior'],
-      anchorValue: '',
+      anchorOptions: [
+        "Scriptio Infima",
+        "Scriptio Inferior",
+        "Scriptio Superior",
+      ],
+      anchorValue: "",
+      entityOptions: ["Manuscript Vat.gr.984", "Manuscript Vat.gr.985"],
+      entityValue: "",
+      authorOptions: ["D. Surace", "M. F. Bocchi"],
+      authorValue: "",
+      criterionOptions: ["Diplomatic Transcription", "Paleographic Analysis"],
+      criterionValue: "",
       annoBody: "",
       colorPopoverOpen: false,
       lineWeightPopoverOpen: false,
@@ -110,7 +130,9 @@ class AnnotationCreation extends Component {
     this.updateStrokeColor = this.updateStrokeColor.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleAnchorChange = this.handleAnchorChange.bind(this);
-    
+    this.handleEntityChange = this.handleEntityChange.bind(this);
+    this.handleAuthorChange = this.handleAuthorChange.bind(this);
+    this.handleCriterionChange = this.handleCriterionChange.bind(this);
   }
 
   /** */
@@ -168,13 +190,24 @@ class AnnotationCreation extends Component {
   submitForm(e) {
     e.preventDefault();
     const { annotation, canvases, receiveAnnotation, config } = this.props;
-    const { annoBody, tags, xywh, svg, conceptualLevel, anchorValue, textEditorStateBustingKey } = this.state;
+    const {
+      annoBody,
+      tags,
+      xywh,
+      svg,
+      conceptualLevel,
+      anchorValue,
+      entityValue,
+      authorValue,
+      criterionValue,
+      textEditorStateBustingKey,
+    } = this.state;
     canvases.forEach((canvas) => {
       const storageAdapter = config.annotation.adapter(canvas.id);
       const anno = new WebAnnotation({
         body: annoBody,
         canvasId: canvas.id,
-        id: (annotation && annotation.id) || `https://purl.archive.org/domain/mlao/anno/${uuid()}`,
+        id: (annotation && annotation.id) || `urn:uuid:${uuid()}`,
         manifestId: canvas.options.resource.id,
         svg,
         tags,
@@ -183,17 +216,36 @@ class AnnotationCreation extends Component {
           id: `https://purl.archive.org/domain/mlao/interpretation/${uuid()}`,
           type: "InterpretationAct",
           hasInterpretationCriterion: {
-            id: "https://purl.archive.org/domain/mlao/interpretation/criterion/diplomatic-interpretative-transcription",
-            type: "InterpretationCriterion"
-          }
+            id: `https://purl.archive.org/domain/mlao/interpretation/criterion/${criterionValue
+            .toLowerCase()
+            .replaceAll(" ", "-")}`,
+            type: "InterpretationCriterion",
+          },
         },
-        hasAnchor: conceptualLevel ? {
-          label: `${anchorValue}`,
-          id: `https://purl.archive.org/domain/mlao/anchor/${anchorValue.toLowerCase().replaceAll(' ', '-')}`, // https://digi.vatlib.it/iiif/MSS_Vat.gr.984/canvas/p0001
-          type: "Anchor",
-          hasConceptualLevel: conceptualLevel,
-          isAnchoredTo: "Vat.gr.984",
-        } : '',
+        creator: authorValue ? {
+          id: `https://purl.archive.org/domain/mlao/creator/${authorValue
+          .toLowerCase()
+          .replaceAll(" ", "-").replaceAll(".", "")}`,
+          type: "foaf:Person",
+          name: `${authorValue}`,
+        }
+        : "",
+        hasAnchor: conceptualLevel
+          ? {
+              label: `${anchorValue}`,
+              id: `https://purl.archive.org/domain/mlao/anchor/${anchorValue
+                .toLowerCase()
+                .replaceAll(" ", "-")}`, // https://digi.vatlib.it/iiif/MSS_Vat.gr.984/canvas/p0001
+              type: "Anchor",
+              hasConceptualLevel: {
+                id: `https://purl.archive.org/domain/mlao/${conceptualLevel}/${uuid()}`,
+                type: `${conceptualLevel}`,
+              },
+              isAnchoredTo: `https://purl.archive.org/domain/mlao/${entityValue
+              .toLowerCase()
+              .replaceAll(" ", "-").replaceAll(".", "")}`,
+            }
+          : "",
       }).toJson();
       if (annotation) {
         storageAdapter.update(anno).then((annoPage) => {
@@ -250,23 +302,59 @@ class AnnotationCreation extends Component {
   }
 
   handleChange(event) {
-    console.log('EVENTO ----->', event);
+    console.log("EVENTO ----->", event);
     this.setState({ conceptualLevel: event.target.value });
     // console.log(this.conceptualLevel);
-}
-
- /** */
- handleAnchorChange(event, newValue) {
-  const { anchorOptions } = this.state;
-  if (newValue && !anchorOptions.includes(newValue)) {
-    this.setState({
-      anchorOptions: [...anchorOptions, newValue],
-      anchorValue: newValue
-    });
-  } else {
-    this.setState({ anchorValue: newValue });
   }
-}
+
+  /** */
+  handleAnchorChange(event, newValue) {
+    const { anchorOptions } = this.state;
+    if (newValue && !anchorOptions.includes(newValue)) {
+      this.setState({
+        anchorOptions: [...anchorOptions, newValue],
+        anchorValue: newValue,
+      });
+    } else {
+      this.setState({ anchorValue: newValue });
+    }
+  }
+
+  handleEntityChange(event, newValue) {
+    const { entityOptions } = this.state;
+    if (newValue && !entityOptions.includes(newValue)) {
+      this.setState({
+        entityOptions: [...entityOptions, newValue],
+        entityValue: newValue,
+      });
+    } else {
+      this.setState({ entityValue: newValue });
+    }
+  }
+
+  handleAuthorChange(event, newValue) {
+    const { authorOptions } = this.state;
+    if (newValue && !authorOptions.includes(newValue)) {
+      this.setState({
+        authorOptions: [...authorOptions, newValue],
+        authorValue: newValue,
+      });
+    } else {
+      this.setState({ authorValue: newValue });
+    }
+  }
+
+  handleCriterionChange(event, newValue) {
+    const { criterionOptions } = this.state;
+    if (newValue && !criterionOptions.includes(newValue)) {
+      this.setState({
+        criterionOptions: [...criterionOptions, newValue],
+        criterionValue: newValue,
+      });
+    } else {
+      this.setState({ criterionValue: newValue });
+    }
+  }
 
   /** */
   render() {
@@ -276,6 +364,12 @@ class AnnotationCreation extends Component {
     const {
       anchorOptions,
       anchorValue,
+      entityOptions,
+      entityValue,
+      authorOptions,
+      authorValue,
+      criterionOptions,
+      criterionValue,
       activeTool,
       colorPopoverOpen,
       currentColorType,
@@ -364,7 +458,12 @@ class AnnotationCreation extends Component {
               <Typography variant="overline">Style</Typography>
             </Grid>
             <Grid item xs={12}>
-              <ToggleButtonGroup className={classes.grouped} aria-label="style selection" size="small" classes={{ grouped: classes.toggleButtonSmall }}>
+              <ToggleButtonGroup
+                className={classes.grouped}
+                aria-label="style selection"
+                size="small"
+                classes={{ grouped: classes.toggleButtonSmall }}
+              >
                 <ToggleButton
                   value="strokeColor"
                   aria-label="select color"
@@ -416,36 +515,37 @@ class AnnotationCreation extends Component {
             </Grid>
           </Grid>
           <Grid container>
-          <Grid item xs={12}>
+            <Grid item xs={12}>
               <Typography variant="overline">Conceptual Level</Typography>
             </Grid>
-          <Grid item xs={12}>
-            <FormControl fullWidth>
-              {/* <InputLabel id="demo-simple-select-autowidth-label">
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                {/* <InputLabel id="demo-simple-select-autowidth-label">
                 Conceptual Level
               </InputLabel> */}
-              <Select
-                labelId="demo-simple-select-autowidth-label"
-                id="demo-simple-select-autowidth"
-                value={this.state.conceptualLevel}
-                onChange={this.handleChange}
-                autoWidth
-                label="Conceptual Level"
-              >
-                <MenuItem value={"Work"}>Work</MenuItem>
-                <MenuItem value={"Expression"}>Expression</MenuItem>
-                <MenuItem value={"Manifestation"}>Manifestation</MenuItem>
-                <MenuItem value={"Item"}>Item</MenuItem>
-              </Select>
-            </FormControl>
+                <Select
+                  labelId="demo-simple-select-autowidth-label"
+                  id="demo-simple-select-autowidth"
+                  value={this.state.conceptualLevel}
+                  onChange={this.handleChange}
+                  autoWidth
+                  label="Conceptual Level"
+                >
+                  <MenuItem value={"Work"}>Work</MenuItem>
+                  <MenuItem value={"Expression"}>Expression</MenuItem>
+                  <MenuItem value={"Manifestation"}>Manifestation</MenuItem>
+                  <MenuItem value={"Item"}>Item</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
-          </Grid>
-          {/* <Divider
-                flexItem
-                orientation="horizontal"
-                className={classes.divider}
-              /> */}
-          <Grid item xs={12}>
+          <Divider
+            flexItem
+            orientation="horizontal"
+            className={classes.divider}
+          />
+          <Grid container>
+            <Grid item xs={12}>
               {/* <Typography variant="overline">Anchor</Typography> */}
               <Autocomplete
                 freeSolo
@@ -454,15 +554,90 @@ class AnnotationCreation extends Component {
                 onChange={this.handleAnchorChange}
                 options={anchorOptions}
                 renderInput={(params) => (
-                  <TextField {...params} variant="standard" label="Create Anchor" fullWidth />
+                  <TextField
+                    {...params}
+                    variant="standard"
+                    label="Create Anchor"
+                    fullWidth
+                  />
                 )}
               />
             </Grid>
-          <Divider
-                flexItem
-                orientation="horizontal"
-                className={classes.divider}
+            <Divider
+              flexItem
+              orientation="horizontal"
+              className={classes.divider}
+            />
+            <Grid item xs={12}>
+              {/* <Typography variant="overline">Anchor</Typography> */}
+              <Autocomplete
+                freeSolo
+                size="small"
+                value={entityValue}
+                onChange={this.handleEntityChange}
+                options={entityOptions}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="standard"
+                    label="Referenced Entity"
+                    fullWidth
+                  />
+                )}
               />
+            </Grid>
+            <Divider
+              flexItem
+              orientation="horizontal"
+              className={classes.divider}
+            />
+            <Grid item xs={12}>
+              {/* <Typography variant="overline">Anchor</Typography> */}
+              <Autocomplete
+                freeSolo
+                size="small"
+                value={criterionValue}
+                onChange={this.handleCriterionChange}
+                options={criterionOptions}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="standard"
+                    label="Interpretative Criterion"
+                    fullWidth
+                  />
+                )}
+              />
+            </Grid>
+            <Divider
+              flexItem
+              orientation="horizontal"
+              className={classes.divider}
+            />
+            <Grid item xs={12}>
+              {/* <Typography variant="overline">Anchor</Typography> */}
+              <Autocomplete
+                freeSolo
+                size="small"
+                value={authorValue}
+                onChange={this.handleAuthorChange}
+                options={authorOptions}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="standard"
+                    label="Editor"
+                    fullWidth
+                  />
+                )}
+              />
+            </Grid>
+            <Divider
+              flexItem
+              orientation="horizontal"
+              className={classes.divider}
+            />
+          </Grid>
           <Grid container>
             <Grid item xs={12}>
               <Typography variant="overline">Content</Typography>
@@ -475,7 +650,7 @@ class AnnotationCreation extends Component {
               />
             </Grid>
           </Grid>
-          
+
           <Button onClick={closeCompanionWindow}>Cancel</Button>
           <Button variant="contained" color="primary" type="submit">
             Save
@@ -539,9 +714,15 @@ const styles = (theme) => ({
     display: "flex",
     flexWrap: "wrap",
   },
-  toggleButtonSmall: {  // Custom class name for targeting ToggleButtons specifically
-    padding: 2,
-    fontSize: '0.8125rem',
+  toggleButtonSmall: {
+    // Custom class name for targeting ToggleButtons specifically
+    padding: 1.2,
+    fontSize: "0.8125rem",
+  },
+  toggleButton: {
+    // Custom class name for targeting ToggleButtons specifically
+    padding: 1.2,
+    fontSize: "0.8125rem",
   },
   section: {
     paddingBottom: theme.spacing(1),

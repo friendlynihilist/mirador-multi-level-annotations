@@ -1,4 +1,5 @@
 import jsonld from "jsonld";
+import axios from 'axios';
 
 /** */
 export default class LocalStorageAdapter {
@@ -14,13 +15,15 @@ export default class LocalStorageAdapter {
         "http://www.w3.org/ns/anno.jsonld",
         {
           mlao: "https://purl.archive.org/domain/mlao/",
-          oa: "http://www.w3.org/ns/oa#",
+          oa: "https://www.w3.org/TR/annotation-vocab/#",
           ecrm: "http://erlangen-crm.org/current/",
-          frbroo: "http://erlangen-crm.org/efrbroo/",
+          frbroo: "http://iflastandards.info/ns/fr/frbr/frbroo/",
           rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
           rdfs: "http://www.w3.org/2000/01/rdf-schema#",
           hico: "http://purl.org/emmedi/hico/",
           prov: "http://www.w3.org/ns/prov#",
+          dct: "https://www.dublincore.org/specifications/dublin-core/dcmi-terms/",
+          foaf: "http://xmlns.com/foaf/spec/",
           wasGeneratedBy: "prov:wasGeneratedBy",
           hasConceptualLevel: "mlao:hasConceptualLevel",
           hasInterpretationCriterion: "hico:hasInterpretationCriterion",
@@ -29,10 +32,13 @@ export default class LocalStorageAdapter {
           hasAnchor: "mlao:hasAnchor",
           isAnchoredTo: "mlao:isAnchoredTo",
           Anchor: "mlao:Anchor",
-          Work: "frbroo:F1_Work",
-          Expression: "frbroo:F2_Expression",
-          Manifestation: "frbroo:F4_Manifestation_Singleton",
-          Item: "frbroo:F5_Item",
+          creator: "https://www.dublincore.org/specifications/dublin-core/dcmi-terms/creator",
+          Person: "http://xmlns.com/foaf/spec/Person",
+          name: "http://xmlns.com/foaf/spec/name",
+          Work: "http://iflastandards.info/ns/fr/frbr/frbroo/F1",
+          Expression: "http://iflastandards.info/ns/fr/frbr/frbroo/F2",
+          Manifestation: "http://iflastandards.info/ns/fr/frbr/frbroo/F4",
+          Item: "http://iflastandards.info/ns/fr/frbr/frbroo/F5",
         },
       ],
       id: this.annotationPageId,
@@ -47,7 +53,15 @@ export default class LocalStorageAdapter {
       annotationPage
     );
     // const rdf = await this.toRdf(annotationPage);
-    console.log(await this.toRdf(annotationPage));
+    // console.log(await this.toRdf(annotationPage));
+    const rdfData = await this.toRdf(annotationPage);
+//     const rdfData = `
+// <http://example.org/resource4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Type1> .
+// <http://example.org/resource4> <http://example.org/property1> "FUNZIONA" .
+// <http://example.org/resource5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/Type2> .
+// `;
+
+    await this.saveRdf(rdfData);
     return annotationPage;
   }
 
@@ -100,6 +114,21 @@ export default class LocalStorageAdapter {
       return null;
     }
   }
+
+  /** */
+  async saveRdf(rdfData) {
+    console.log(rdfData);
+    try {
+      const response = await axios.post('http://localhost:80/blazegraph/sparql', rdfData, {
+        headers: {
+          'Content-Type': 'text/x-nquads' // or other RDF MIME type depending on your RDF format
+        }
+      });
+      console.log('Response:', response.data);
+    } catch (error) {
+      console.error('Error saving RDF:', error);
+    }
+  };
 
   /** */
   async all() {

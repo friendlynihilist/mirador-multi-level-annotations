@@ -2,7 +2,7 @@
 export default class WebAnnotation {
   /** */
   constructor({
-    canvasId, id, xywh, body, tags, svg, manifestId, hasAnchor, wasGeneratedBy
+    canvasId, id, xywh, body, tags, svg, manifestId, hasAnchor, wasGeneratedBy, creator
   }) {
     this.id = id;
     this.canvasId = canvasId;
@@ -13,6 +13,7 @@ export default class WebAnnotation {
     this.manifestId = manifestId;
     this.hasAnchor = hasAnchor;
     this.wasGeneratedBy = wasGeneratedBy;
+    this.creator = creator;
   }
 
   // GOOD URIs: http://{domain}/{type}/{concept}/{reference}
@@ -26,6 +27,7 @@ export default class WebAnnotation {
       target: this.target(),
       hasAnchor: this.hasAnchor,
       wasGeneratedBy: this.wasGeneratedBy,
+      creator: this.creator,
       type: 'Annotation',
     };
   }
